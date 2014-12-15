@@ -14,6 +14,7 @@
  * Version 0.9.3: 2009-06-13: adaptions for new API
  * Version 0.9.4: 2014-12-07: added support for default device
  * Version 0.9.5: 2014-12-15: added help, added option for debug info, corrected viewmode 2, cleaned up code
+ *                2014-12-15: corrections for static compilation mode
  *
  */
 
@@ -167,6 +168,7 @@ static const char help_msg[] =
 #ifdef SERDISP_STATIC
   static serdisp_t*      dd;
   static serdisp_CONN_t* sdcd;
+
 /*  extern char*           sd_errormsg;   */              /* extra error message */
   #define fp_serdisp_getversioncode            serdisp_getversioncode
   #define fp_SDCONN_open                       SDCONN_open
@@ -201,6 +203,7 @@ static const char help_msg[] =
   #define fp_serdisp_cliparea                  serdisp_cliparea
   #define fp_serdisp_defaultdevice             serdisp_defaultdevice
 #else
+  char* errmsg; /* error message returned by dlerror() */
   /* default background/foreground colours */
   #define SD_COL_BLACK      0xFF000000
   #define SD_COL_WHITE      0xFFFFFFFF
@@ -406,7 +409,11 @@ static void drawingalgo_truecolour(unsigned char** image, int sx, int sy, int w,
 
   unsigned char* buffer = image[0];
 
+#ifdef SERDISP_STATIC
+  if (serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viemode=2 don't go together ... */
+#else
   if (fp_serdisp_cliparea && serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viemode=2 don't go together ... */
+#endif
     fp_serdisp_cliparea(dd, sx, sy, w, h, diff_x, diff_y, image_width, image_height, 24, buffer);
   } else {
     shifty = diff_y * image_width;
@@ -456,8 +463,6 @@ static int preinit(const char *arg) {
     {NULL, 0, NULL, NULL}
   };
 
-
-  char* errmsg; /* error message returned by dlerror() */
 
   if ( (subopt_parse(arg, subopts) != 0) || serdisp_flag_showhelp) {
     mp_msg(MSGT_VO, MSGL_FATAL, help_msg);
@@ -597,13 +602,25 @@ static int preinit(const char *arg) {
   /* done loading all required symbols */
 #endif /* SERDISP_STATIC */
 
+#ifdef SERDISP_STATIC
+  if (! sdcddev) {
+#else
   if (! sdcddev && fp_serdisp_defaultdevice) {
-    sdcddev = fp_serdisp_defaultdevice(dispname);
+#endif
+    char* tempdev = (char*) fp_serdisp_defaultdevice(dispname);
+    sdcddev = (char*) malloc( strlen(tempdev) + 1);
+    if (sdcddev) {
+      strncpy(sdcddev, tempdev, strlen(tempdev)) ;
+      sdcddev[strlen(tempdev)] = '\0';
+    } else {
+      mp_msg(MSGT_VO,MSGL_ERR,"vo_serdisp: unable to allocate memory for defaukt device string (device %s)\n", sdcddev);
+      return VO_ERROR;
+    }
   }
 
   sdcd = fp_SDCONN_open(sdcddev);
 
-  if (sdcd == (void*)0) {  
+  if (sdcd == (void*)0) {
     mp_msg(MSGT_VO,MSGL_ERR,"vo_serdisp: unable to open output device %s, additional info: %s\n", sdcddev, sd_errormsg);
     return VO_ERROR;
   }
