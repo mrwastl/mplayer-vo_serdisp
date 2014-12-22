@@ -410,9 +410,9 @@ static void drawingalgo_truecolour(unsigned char** image, int sx, int sy, int w,
   unsigned char* buffer = image[0];
 
 #ifdef SERDISP_STATIC
-  if (serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viemode=2 don't go together ... */
+  if (serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
 #else
-  if (fp_serdisp_cliparea && serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viemode=2 don't go together ... */
+  if (fp_serdisp_cliparea && serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
 #endif
     fp_serdisp_cliparea(dd, sx, sy, w, h, diff_x, diff_y, image_width, image_height, 24, buffer);
   } else {

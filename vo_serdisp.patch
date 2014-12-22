@@ -8,8 +8,8 @@
  SRCS_MPLAYER-$(SGIAUDIO)      += libao2/ao_sgi.c
  SRCS_MPLAYER-$(SNDIO)         += libao2/ao_sndio.c
  SRCS_MPLAYER-$(SUNAUDIO)      += libao2/ao_sun.c
---- mplayer_orig/configure	2014-12-14 21:08:14.808159507 +0100
-+++ configure	2014-12-13 20:53:14.220415169 +0100
+--- mplayer_orig/configure	2014-12-22 00:40:53.153436099 +0100
++++ configure	2014-12-19 01:42:58.323334053 +0100
 @@ -503,6 +503,7 @@
    --enable-bl              enable Blinkenlights video output [disable]
    --enable-tdfxvid         enable tdfx_vid video output [disable]
@@ -116,7 +116,7 @@
  };
  
 --- mplayer_orig/libvo/vo_serdisp.c	1970-01-01 01:00:00.000000000 +0100
-+++ libvo/vo_serdisp.c	2014-12-15 19:26:22.724096969 +0100
++++ libvo/vo_serdisp.c	2014-12-22 01:13:03.924494281 +0100
 @@ -0,0 +1,936 @@
 +/*
 + * MPlayer
@@ -530,9 +530,9 @@
 +  unsigned char* buffer = image[0];
 +
 +#ifdef SERDISP_STATIC
-+  if (serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viemode=2 don't go together ... */
++  if (serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
 +#else
-+  if (fp_serdisp_cliparea && serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viemode=2 don't go together ... */
++  if (fp_serdisp_cliparea && serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
 +#endif
 +    fp_serdisp_cliparea(dd, sx, sy, w, h, diff_x, diff_y, image_width, image_height, 24, buffer);
 +  } else {
