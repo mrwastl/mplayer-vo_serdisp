@@ -3,7 +3,7 @@ mplayer-vo_serdisp
 
 Patch for mplayer to add support for serdisplib
 
-This patch file was tested with mplayer svn version 37342.
+This patch file was tested with mplayer svn version 37363.
 
 
 Instructions
@@ -14,7 +14,7 @@ Instructions
 * call `configure --enable-serdisp`
 * build mplayer
 
-*Note*;
+*Note*:
 * If mplayer is compiled using dynamic loading of shared libraries, presence of serdisplib is not required (neither shared object nor header files).
 * If serdisplib is installed outside the library path or a different version (eg. svn version vs. packaged version) is to be used, use `LD_LIBRARY_PATH`
   (eg. `LD_LIBRARY_PATH=/path_to_serdisp/lib ./mplayer -vo serdisp:.....`).

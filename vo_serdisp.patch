@@ -8,8 +8,8 @@
  SRCS_MPLAYER-$(SGIAUDIO)      += libao2/ao_sgi.c
  SRCS_MPLAYER-$(SNDIO)         += libao2/ao_sndio.c
  SRCS_MPLAYER-$(SUNAUDIO)      += libao2/ao_sun.c
---- mplayer_orig/configure	2014-12-22 00:40:53.153436099 +0100
-+++ configure	2014-12-19 01:42:58.323334053 +0100
+--- mplayer_orig/configure	2015-02-01 23:57:44.055160945 +0100
++++ configure	2015-02-02 00:02:18.816976874 +0100
 @@ -503,6 +503,7 @@
    --enable-bl              enable Blinkenlights video output [disable]
    --enable-tdfxvid         enable tdfx_vid video output [disable]
@@ -94,8 +94,8 @@
  $def_svga
  $def_tdfxfb
  $def_tdfxvid
---- mplayer_orig/libvo/video_out.c	2014-12-14 21:08:14.617158820 +0100
-+++ libvo/video_out.c	2014-10-16 22:29:17.533169160 +0200
+--- mplayer_orig/libvo/video_out.c	2015-02-01 23:57:44.007160802 +0100
++++ libvo/video_out.c	2015-02-02 00:02:18.717976580 +0100
 @@ -150,6 +150,8 @@
  extern vo_functions_t video_out_xover;
  extern vo_functions_t video_out_xvidix;
