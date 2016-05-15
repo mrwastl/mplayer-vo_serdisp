@@ -1,7 +1,7 @@
 /*
  * MPlayer
  * 
- * Video driver for serdisplib - 0.9.5
+ * Video driver for serdisplib - 0.9.6
  * 
  * by Wolfgang Astleitner <mrwastl@users.sourceforge.net>
  * 
@@ -15,6 +15,9 @@
  * Version 0.9.4: 2014-12-07: added support for default device
  * Version 0.9.5: 2014-12-15: added help, added option for debug info, corrected viewmode 2, cleaned up code
  *                2014-12-15: corrections for static compilation mode
+ * Version 0.9.6: 2016-05-15: added checks whether serdisp_cliparea() may be used reliably
+ *                            removed support for very old serdisp version not supporting new colour functions to clean up code
+ *                            get rid of compiler warning when calling sws_scale()
  *
  */
 
@@ -96,6 +99,7 @@ static int src_height;
 
 
 static int istruecolour = 0;               /* monochrome/greyscale or truecolour image */
+static int isclipareasave = 1;             /* is it save to use serdisp_cliparea()? */
 
 static  float serdisp_flag_gamma = 1.0;    /* gamma value */
 static  int serdisp_flag_gamma_enable = 0; /* gamma correction enabled (1) or disabled (0) */
@@ -122,8 +126,6 @@ static struct SwsContext *sws=NULL;
 extern void mplayer_put_key(int code);
 
 /* extra parameters */
-
-static int use_new_colour_functions = 0;
 
 
 static long     serdisp_version;             /* serdisplib version returned from library */
@@ -186,19 +188,9 @@ static const char help_msg[] =
   #define fp_serdisp_getpixelaspect            serdisp_getpixelaspect
   #define fp_serdisp_quit                      serdisp_quit
 
-  #define fp_serdisp_setcolour                 serdisp_setcolour
-  #define fp_serdisp_setgrey                   serdisp_setgrey
-  #define fp_serdisp_getcolour                 serdisp_getcolour
-
-  #ifdef SD_SUPP_ARCHINDEP_SDCOL_FUNCTIONS
-    #define fp_serdisp_setsdcol                  serdisp_setsdcol
-    #define fp_serdisp_setsdgrey                 serdisp_setsdgrey
-    #define fp_serdisp_getsdcol                  serdisp_getsdcol
-  #else
-    #define fp_serdisp_setsdcol                  serdisp_setcolour
-    #define fp_serdisp_setsdgrey                 serdisp_setgrey
-    #define fp_serdisp_getsdcol                  serdisp_getcolour
-  #endif
+  #define fp_serdisp_setsdcol                  serdisp_setsdcol
+  #define fp_serdisp_setsdgrey                 serdisp_setsdgrey
+  #define fp_serdisp_getsdcol                  serdisp_getsdcol
 
   #define fp_serdisp_cliparea                  serdisp_cliparea
   #define fp_serdisp_defaultdevice             serdisp_defaultdevice
@@ -236,10 +228,6 @@ static const char help_msg[] =
   static int      (*fp_serdisp_getdepth)       (void* dd);
   static int      (*fp_serdisp_getpixelaspect) (void* dd);
   static void     (*fp_serdisp_quit)           (void* dd);
-
-  static void     (*fp_serdisp_setcolour)      (void* dd, int x, int y, long colour);
-  static void     (*fp_serdisp_setgrey)        (void* dd, int x, int y, unsigned char grey);
-  static long     (*fp_serdisp_getcolour)      (void* dd, int x, int y);
 
   static void     (*fp_serdisp_setsdcol)       (void* dd, int x, int y, uint32_t colour);
   static void     (*fp_serdisp_setsdgrey)      (void* dd, int x, int y, unsigned char grey);
@@ -322,10 +310,7 @@ static void drawingalgo_dithergrey(unsigned char** image, int sx, int sy, int w,
       if (j > MAX_GREYVALUE) 
         j = MAX_GREYVALUE;   /* should never occur (but to be sure ...) */
 
-      if (use_new_colour_functions)
-        fp_serdisp_setsdgrey(dd, x+sx, y+sy, j);
-      else
-        fp_serdisp_setgrey(dd, x+sx, y+sy, j);
+      fp_serdisp_setsdgrey(dd, x+sx, y+sy, j);
 
       i = i - j;
       k = (i >> 4);
@@ -370,15 +355,9 @@ static void drawingalgo_directgrey(unsigned char** image, int sx, int sy, int w,
 
       /* if monochrome-display: consider threshold value (default value: 127) */
       if (image_colours == 2) {
-        if (use_new_colour_functions)
-          fp_serdisp_setsdgrey(dd, x+sx, y+sy, ((i <= serdisp_flag_threshold) ? 0 : MAX_GREYVALUE) );
-        else
-          fp_serdisp_setgrey(dd, x+sx, y+sy, ((i <= serdisp_flag_threshold) ? 0 : MAX_GREYVALUE) );
+        fp_serdisp_setsdgrey(dd, x+sx, y+sy, ((i <= serdisp_flag_threshold) ? 0 : MAX_GREYVALUE) );
       } else {
-        if (use_new_colour_functions)
-          fp_serdisp_setsdgrey(dd, x+sx, y+sy, i);  /* let serdisplib do the greyvalue matching if greyscale display */
-        else
-          fp_serdisp_setgrey(dd, x+sx, y+sy, i);  /* let serdisplib do the greyvalue matching if greyscale display */
+        fp_serdisp_setsdgrey(dd, x+sx, y+sy, i);  /* let serdisplib do the greyvalue matching if greyscale display */
       }
     }
   }
@@ -409,11 +388,7 @@ static void drawingalgo_truecolour(unsigned char** image, int sx, int sy, int w,
 
   unsigned char* buffer = image[0];
 
-#ifdef SERDISP_STATIC
-  if (serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
-#else
-  if (fp_serdisp_cliparea && serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
-#endif
+  if (isclipareasave) {
     fp_serdisp_cliparea(dd, sx, sy, w, h, diff_x, diff_y, image_width, image_height, 24, buffer);
   } else {
     shifty = diff_y * image_width;
@@ -425,10 +400,7 @@ static void drawingalgo_truecolour(unsigned char** image, int sx, int sy, int w,
         g = buffer[shiftx++];
         b = buffer[shiftx  ];
 
-        if (use_new_colour_functions)
-          fp_serdisp_setsdcol(dd, x+sx, y+sy, 0xFF000000 | (r << 16) | (g << 8) | b);
-        else
-          fp_serdisp_setcolour(dd, x+sx, y+sy, 0xFF000000L | (r << 16) | (g << 8) | b);
+        fp_serdisp_setsdcol(dd, x+sx, y+sy, 0xFF000000 | (r << 16) | (g << 8) | b);
       }
       shifty += image_width;
     }
@@ -483,10 +455,8 @@ static int preinit(const char *arg) {
   }
 
 #ifdef SERDISP_STATIC
-  #ifdef SD_SUPP_ARCHINDEP_SDCOL_FUNCTIONS
-    use_new_colour_functions = 1;
-  #else
-    use_new_colour_functions = 0;
+  #ifndef SD_SUPP_ARCHINDEP_SDCOL_FUNCTIONS
+    #error "vo_serdisp.c: serdisp library too old (no support for new colour functions)"
   #endif
 #else
   /* dyn-load library and init. function pointers */
@@ -566,23 +536,14 @@ static int preinit(const char *arg) {
   sd_errormsg = (char*) dlsym(sdhnd, "sd_errormsg");
   dlerror_die("sd_errormsg");
 
-  fp_serdisp_setcolour = (void (*)(void*, int, int, long int)) dlsym(sdhnd, "serdisp_setcolour");
-  dlerror(); /* clear error code */
-
-  fp_serdisp_setgrey = (void (*)(void*, int, int, unsigned char)) dlsym(sdhnd, "serdisp_setgrey");
-  dlerror(); /* clear error code */
-
-  fp_serdisp_getcolour = (long int (*)(void*, int, int)) dlsym(sdhnd, "serdisp_getcolour");
-  dlerror(); /* clear error code */
-
   fp_serdisp_setsdcol = (void (*)(void*, int, int, uint32_t)) dlsym(sdhnd, "serdisp_setsdcol");
-  dlerror(); /* clear error code */
+  dlerror_die("serdisp_setsdcol");
 
   fp_serdisp_setsdgrey = (void (*)(void*, int, int, unsigned char)) dlsym(sdhnd, "serdisp_setsdgrey");
-  dlerror(); /* clear error code */
+  dlerror_die("serdisp_setsdgrey");
 
   fp_serdisp_getsdcol = (uint32_t (*)(void*, int, int)) dlsym(sdhnd, "serdisp_getsdcol");
-  dlerror(); /* clear error code */
+  dlerror_die("serdisp_getsdcol");
 
   fp_serdisp_cliparea = (int (*)(void*, int, int, int, int, int, int, int, int, int, unsigned char*)) dlsym(sdhnd, "serdisp_cliparea");
   dlerror(); /* clear error code */
@@ -590,15 +551,6 @@ static int preinit(const char *arg) {
   fp_serdisp_defaultdevice = (char* (*)(const char*)) dlsym(sdhnd, "serdisp_defaultdevice");
   dlerror(); /* clear error code */
 
-  if ( ! ( (fp_serdisp_setcolour && fp_serdisp_setgrey && fp_serdisp_getcolour) || 
-           (fp_serdisp_setsdcol && fp_serdisp_setsdgrey && fp_serdisp_getsdcol) ) ) {
-    mp_msg(MSGT_VO,MSGL_ERR,"dlsym(): neither old nor new colour functions could be loaded\n");
-    return VO_ERROR;
-  }
-
-  if (fp_serdisp_setsdcol && fp_serdisp_setsdgrey && fp_serdisp_getsdcol) {
-    use_new_colour_functions = 1;
-  }
   /* done loading all required symbols */
 #endif /* SERDISP_STATIC */
 
@@ -740,6 +692,16 @@ config(uint32_t width, uint32_t height, uint32_t d_width,
     if (screen_h > fp_serdisp_getheight(dd)) screen_h = fp_serdisp_getheight(dd);
   }
 
+  /* check whether it is save to use serdisp_cliparea() */
+  if (
+#ifndef SERDISP_STATIC
+    (! fp_serdisp_cliparea) ||
+#endif
+    (istruecolour && (screen_w != fp_serdisp_getwidth(dd)) )
+  ) {
+    isclipareasave = 0;
+  }
+
   screen_x = (fp_serdisp_getwidth(dd) -screen_w) >> 1;
   screen_y = (fp_serdisp_getheight(dd)-screen_h) >> 1;
 
@@ -747,7 +709,6 @@ config(uint32_t width, uint32_t height, uint32_t d_width,
   src_height = height;
   image_width = screen_w;
   image_height = screen_h;
-
 
   if(sws) 
     sws_freeContext(sws);
@@ -771,12 +732,10 @@ config(uint32_t width, uint32_t height, uint32_t d_width,
                                 width, height, d_width, d_height, flags);
     mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): + aspect ratio corr.: src_w/_h: %d/%d -> image_w/_h: %d/%d  pixel asp.ratio: %.2f\n", 
                                src_width, src_height, image_width, image_height, (fp_serdisp_getpixelaspect(dd) / 100.0));
-    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): dest geometry: x/y/w/h: %d/%d/%d/%d\n", screen_x, screen_y, screen_w, screen_h);
+    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): dest geometry: x/y/w/h: %d/%d/%d/%d (factor: %f)\n", screen_x, screen_y, screen_w, screen_h, fact);
     mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): phys. display dimensions: w/h: %d/%d\n", fp_serdisp_getwidth(dd), fp_serdisp_getheight(dd));
-    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): flags: algo: %d, threshold: %d, gamma[enabled=%d]: %.2f, viewmode: %d\n", 
-                               serdisp_flag_algo, serdisp_flag_threshold, serdisp_flag_gamma_enable, serdisp_flag_gamma, serdisp_flag_viewmode);
-    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): colour functions: %s\n", 
-                               (use_new_colour_functions) ? "new 'uint32_t'-based colours" : "old, 'long'-based colours");
+    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): flags: algo: %d, threshold: %d, gamma[enabled=%d]: %.2f, viewmode: %d, cliparea: %d\n", 
+                               serdisp_flag_algo, serdisp_flag_threshold, serdisp_flag_gamma_enable, serdisp_flag_gamma, serdisp_flag_viewmode, isclipareasave);
   }
 
   return 0;
@@ -817,7 +776,7 @@ draw_frame(uint8_t *src[]) {
     break;
   }
 
-  sws_scale(sws,src,stride,0,src_height,image,image_stride); 
+  sws_scale(sws,(const uint8_t* const *)src,stride,0,src_height,image,image_stride); 
 
   /* small hack which cleans potential remainders of a previously drawn OSD */
   /* the drawing routines might not use the hole display area for drawing a frame (because of aspect ratio a.s.o.), 
@@ -828,10 +787,7 @@ draw_frame(uint8_t *src[]) {
     int i,j;
     for (j = osd_posy; j < osd_posy + osd_height; j++) {
       for (i = 0 ; i < fp_serdisp_getwidth(dd); i++) {
-        if (use_new_colour_functions)
-          fp_serdisp_setsdcol(dd, i, j, bg_colour);
-        else
-          fp_serdisp_setcolour(dd, i, j, (long)bg_colour);
+        fp_serdisp_setsdcol(dd, i, j, bg_colour);
       }
     }
     osd_updated = 0;  /* do this only once */
@@ -850,7 +806,7 @@ draw_slice(uint8_t *src[], int stride[], int w, int h, int x, int y) {
   int dx2 = screen_x + ((x+w) * screen_w / src_width);
   int dy2 = screen_y + ((y+h) * screen_h / src_height);
 
-  sws_scale(sws,src,stride,y,h,image,image_stride);
+  sws_scale(sws, (const uint8_t* const*) src, stride, y, h, image, image_stride);
   drawing_algo(image, dx1, dy1, dx2-dx1, dy2-dy1);
 
   return 0;
@@ -890,27 +846,18 @@ draw_osd(void) {
     /* draw background using foreground colour */
     for (j = osd_posy; j < osd_posy + osd_height; j++) {
       for (i = 0; i < fp_serdisp_getwidth(dd); i++) {
-        if (use_new_colour_functions)
-          fp_serdisp_setsdcol(dd, i,j, fg_colour);
-        else
-          fp_serdisp_setcolour(dd, i,j, (long)fg_colour);
+        fp_serdisp_setsdcol(dd, i,j, fg_colour);
       }
     }
     /* draw progress-bar using background colour */
     for (j = osd_posy + osd_margin ; j < osd_posy + osd_margin + osd_bar_height ; j++) {
       for (i = 0 ; i < bar_width ; i++) {
-        if (use_new_colour_functions)
-          fp_serdisp_setsdcol(dd, bordergap + i, j, bg_colour);
-        else
-          fp_serdisp_setcolour(dd, bordergap + i, j, (long)bg_colour);
+        fp_serdisp_setsdcol(dd, bordergap + i, j, bg_colour);
       }
       for (s = 0; s < 5; s++) {
         i = bordergap +   (((fp_serdisp_getwidth(dd) - bordergap*2) / 4) * s);
         if (!(s % 2) || (j % 2)) {
-          if (use_new_colour_functions)
-            fp_serdisp_setsdcol(dd, i ,j, fp_serdisp_getsdcol(dd, i, j) ^ 0xFFFFFF);
-          else
-            fp_serdisp_setcolour(dd, i ,j, fp_serdisp_getcolour(dd, i, j) ^ 0xFFFFFFL);
+          fp_serdisp_setsdcol(dd, i ,j, fp_serdisp_getsdcol(dd, i, j) ^ 0xFFFFFF);
         }
       }
     }

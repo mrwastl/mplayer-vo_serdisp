@@ -1,6 +1,6 @@
---- mplayer_orig/Makefile	2014-12-14 21:08:12.957152840 +0100
-+++ Makefile	2014-12-07 19:35:53.144280932 +0100
-@@ -547,6 +547,7 @@
+--- mplayer_orig/Makefile	2016-05-09 17:31:31.288890183 +0200
++++ Makefile	2016-05-09 20:13:45.029501903 +0200
+@@ -544,6 +544,7 @@
  SRCS_MPLAYER-$(SDL)           += libao2/ao_sdl.c                        \
                                   libvo/vo_sdl.c                         \
                                   libvo/sdl_common.c
@@ -8,9 +8,9 @@
  SRCS_MPLAYER-$(SGIAUDIO)      += libao2/ao_sgi.c
  SRCS_MPLAYER-$(SNDIO)         += libao2/ao_sndio.c
  SRCS_MPLAYER-$(SUNAUDIO)      += libao2/ao_sun.c
---- mplayer_orig/configure	2015-02-01 23:57:44.055160945 +0100
-+++ configure	2015-02-02 00:02:18.816976874 +0100
-@@ -503,6 +503,7 @@
+--- mplayer_orig/configure	2016-05-09 17:31:31.299890119 +0200
++++ configure	2016-05-15 23:40:00.390989917 +0200
+@@ -506,6 +506,7 @@
    --enable-bl              enable Blinkenlights video output [disable]
    --enable-tdfxvid         enable tdfx_vid video output [disable]
    --enable-xvr100          enable SUN XVR-100 video output [autodetect]
@@ -18,7 +18,7 @@
    --disable-tga            disable Targa video output [enable]
    --disable-pnm            disable PNM video output [enable]
    --disable-md5sum         disable md5sum video output [enable]
-@@ -813,6 +814,7 @@
+@@ -816,6 +817,7 @@
  _tdfxfb=no
  _tdfxvid=no
  _xvr100=auto
@@ -26,7 +26,7 @@
  _tga=yes
  _directfb=auto
  _zr=auto
-@@ -1299,6 +1301,8 @@
+@@ -1303,6 +1305,8 @@
    --enable-tdfxvid)     _tdfxvid=yes    ;;
    --disable-xvr100)     _xvr100=no      ;;
    --enable-xvr100)      _xvr100=yes     ;;
@@ -35,7 +35,54 @@
    --disable-tga)        _tga=no         ;;
    --enable-tga)         _tga=yes        ;;
    --enable-directfb)    _directfb=yes   ;;
-@@ -4483,6 +4487,42 @@
+@@ -1554,7 +1558,6 @@
+ libavdecoders_all=$(list_subparts  DEC      decoder  codec/allcodecs.c)
+ libavencoders_all=$(list_subparts  ENC      encoder  codec/allcodecs.c)
+ libavparsers_all=$(list_subparts   PARSER   parser   codec/allcodecs.c)
+-libavbsfs_all=$(list_subparts      BSF      bsf      codec/allcodecs.c)
+ libavhwaccels_all=$(list_subparts  HWACCEL  hwaccel  codec/allcodecs.c)
+ test $? -eq 0 && _list_subparts=found || _list_subparts="not found"
+ echores "$_list_subparts"
+@@ -1565,6 +1568,11 @@
+ test $? -eq 0 && _list_subparts=found || _list_subparts="not found"
+ echores "$_list_subparts"
+ 
++echocheck "ffmpeg/libavcodec/bitsteram_filters.c"
++libavbsfs_all=$(list_subparts_extern AVBitStreamFilter bsf codec/bitstream_filters.c)
++test $? -eq 0 && _list_subparts_extern=found || _list_subparts_extern="not found"
++echores "$_list_subparts_extern"
++
+ echocheck "ffmpeg/libavformat/protocols.c"
+ libavprotocols_all=$(list_subparts_extern URLProtocol protocol format/protocols.c)
+ test $? -eq 0 && _list_subparts_extern=found || _list_subparts_extern="not found"
+@@ -1597,7 +1605,7 @@
+ libavfilters=$(echo $libavfilters_all)
+ 
+ libavdecoders=$(filter_out_component decoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_MMAL MPEG4_MMAL MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV H264_MMAL H264_MEDIACODEC [A-Z0-9_]*_AT')
+-libavencoders=$(filter_out_component encoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV NVENC[A-Z0-9_]* H264_NVENC[A-Z0-9_]* HEVC_NVENC[A-Z0-9_]* HAP H264_VIDEOTOOLBOX [A-Z0-9_]*_AT')
++libavencoders=$(filter_out_component encoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV NVENC[A-Z0-9_]* H264_NVENC[A-Z0-9_]* HEVC_NVENC[A-Z0-9_]* HAP H264_VIDEOTOOLBOX H264_VAAPI HEVC_VAAPI MJPEG_VAAPI H264_OMX MPEG4_OMX [A-Z0-9_]*_AT')
+ libavdemuxers=$(filter_out_component demuxer 'AVISYNTH LIB[A-Z0-9_]* REDIR')
+ libavmuxers=$(filter_out_component muxer 'CHROMAPRINT LIB[A-Z0-9_]* RTP RTSP SAP')
+ libavprotocols=$(filter_out_component protocol 'BLURAY FFRTMPCRYPT HTTPS LIB[A-Z0-9_]* TLS TLS_GNUTLS TLS_OPENSSL TLS_SECURETRANSPORT TLS_SCHANNEL')
+@@ -4435,7 +4443,7 @@
+ fi
+ if test "$_gnutls" = yes ; then
+   def_gnutls='#define CONFIG_GNUTLS 1'
+-  libavprotocols="$libavprotocols HTTPS_PROTOCOL TLS_PROTOCOL TLS_GNUTLS_PROTOCOL"
++  libavprotocols="$libavprotocols HTTPS_PROTOCOL TLS_GNUTLS_PROTOCOL"
+   extra_cflags="$extra_cflags $($_pkg_config --cflags gnutls)"
+   extra_ldflags="$extra_ldflags $($_pkg_config --libs gnutls)"
+ else
+@@ -4446,7 +4454,7 @@
+ echocheck "OpenSSL"
+ if test "$_openssl" = yes ; then
+   def_openssl='#define CONFIG_OPENSSL 1'
+-  libavprotocols="$libavprotocols HTTPS_PROTOCOL TLS_PROTOCOL TLS_OPENSSL_PROTOCOL"
++  libavprotocols="$libavprotocols HTTPS_PROTOCOL TLS_OPENSSL_PROTOCOL"
+   extra_cflags="$extra_cflags $($_pkg_config --cflags openssl)"
+   extra_ldflags="$extra_ldflags $($_pkg_config --libs openssl)"
+ else
+@@ -4565,6 +4573,42 @@
  fi
  echores "$_xvr100"
  
@@ -78,7 +125,7 @@
  echocheck "tga"
  if test "$_tga" = yes ; then
    def_tga='#define CONFIG_TGA 1'
-@@ -8452,6 +8492,7 @@
+@@ -8553,6 +8597,7 @@
  S3FB = $_s3fb
  SDL = $_sdl
  SDL_IMAGE = $sdl_image
@@ -86,7 +133,7 @@
  SPEEX = $_speex
  STREAM_CACHE = $_stream_cache
  SGIAUDIO = $_sgiaudio
-@@ -9014,6 +9055,7 @@
+@@ -9136,6 +9181,7 @@
  $def_s3fb
  $def_sdl
  $def_sdl_sdl_h
@@ -94,9 +141,35 @@
  $def_svga
  $def_tdfxfb
  $def_tdfxvid
---- mplayer_orig/libvo/video_out.c	2015-02-01 23:57:44.007160802 +0100
-+++ libvo/video_out.c	2015-02-02 00:02:18.717976580 +0100
-@@ -150,6 +150,8 @@
+@@ -9472,6 +9518,25 @@
+ EOF
+ touch ffmpeg/.config
+ 
++# generate the lists of enabled components for ffmpeg
++print_enabled_components(){
++    file=$1
++    struct_name=$2
++    name=$3
++    shift 3
++    list=$(echo $* | tolower)
++    echo "static const $struct_name *$name[] = {" > $TMPH
++    for c in $list; do
++        printf "    &ff_%s,\n" $c >> $TMPH
++    done
++    echo "    NULL };" >> $TMPH
++    cmp -s $TMPH ffmpeg/$file && return
++    cp $TMPH ffmpeg/$file
++}
++
++print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $libavbsfs
++print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $libavprotocols
++
+ fi
+ 
+ #############################################################################
+--- mplayer_orig/libvo/video_out.c	2015-05-14 14:36:49.388669020 +0200
++++ libvo/video_out.c	2015-05-14 17:38:15.516111652 +0200
+@@ -154,6 +154,8 @@
  extern vo_functions_t video_out_xover;
  extern vo_functions_t video_out_xvidix;
  
@@ -105,7 +178,7 @@
  const vo_functions_t* const video_out_drivers[] =
  {
  #ifdef CONFIG_XVR100
-@@ -300,6 +302,9 @@
+@@ -304,6 +306,9 @@
  #ifdef CONFIG_MNG
          &video_out_mng,
  #endif
@@ -116,12 +189,12 @@
  };
  
 --- mplayer_orig/libvo/vo_serdisp.c	1970-01-01 01:00:00.000000000 +0100
-+++ libvo/vo_serdisp.c	2014-12-22 01:13:03.924494281 +0100
-@@ -0,0 +1,936 @@
++++ libvo/vo_serdisp.c	2016-05-15 23:29:52.573222935 +0200
+@@ -0,0 +1,883 @@
 +/*
 + * MPlayer
 + * 
-+ * Video driver for serdisplib - 0.9.5
++ * Video driver for serdisplib - 0.9.6
 + * 
 + * by Wolfgang Astleitner <mrwastl@users.sourceforge.net>
 + * 
@@ -135,6 +208,9 @@
 + * Version 0.9.4: 2014-12-07: added support for default device
 + * Version 0.9.5: 2014-12-15: added help, added option for debug info, corrected viewmode 2, cleaned up code
 + *                2014-12-15: corrections for static compilation mode
++ * Version 0.9.6: 2016-05-15: added checks whether serdisp_cliparea() may be used reliably
++ *                            removed support for very old serdisp version not supporting new colour functions to clean up code
++ *                            get rid of compiler warning when calling sws_scale()
 + *
 + */
 +
@@ -216,6 +292,7 @@
 +
 +
 +static int istruecolour = 0;               /* monochrome/greyscale or truecolour image */
++static int isclipareasave = 1;             /* is it save to use serdisp_cliparea()? */
 +
 +static  float serdisp_flag_gamma = 1.0;    /* gamma value */
 +static  int serdisp_flag_gamma_enable = 0; /* gamma correction enabled (1) or disabled (0) */
@@ -242,8 +319,6 @@
 +extern void mplayer_put_key(int code);
 +
 +/* extra parameters */
-+
-+static int use_new_colour_functions = 0;
 +
 +
 +static long     serdisp_version;             /* serdisplib version returned from library */
@@ -306,19 +381,9 @@
 +  #define fp_serdisp_getpixelaspect            serdisp_getpixelaspect
 +  #define fp_serdisp_quit                      serdisp_quit
 +
-+  #define fp_serdisp_setcolour                 serdisp_setcolour
-+  #define fp_serdisp_setgrey                   serdisp_setgrey
-+  #define fp_serdisp_getcolour                 serdisp_getcolour
-+
-+  #ifdef SD_SUPP_ARCHINDEP_SDCOL_FUNCTIONS
-+    #define fp_serdisp_setsdcol                  serdisp_setsdcol
-+    #define fp_serdisp_setsdgrey                 serdisp_setsdgrey
-+    #define fp_serdisp_getsdcol                  serdisp_getsdcol
-+  #else
-+    #define fp_serdisp_setsdcol                  serdisp_setcolour
-+    #define fp_serdisp_setsdgrey                 serdisp_setgrey
-+    #define fp_serdisp_getsdcol                  serdisp_getcolour
-+  #endif
++  #define fp_serdisp_setsdcol                  serdisp_setsdcol
++  #define fp_serdisp_setsdgrey                 serdisp_setsdgrey
++  #define fp_serdisp_getsdcol                  serdisp_getsdcol
 +
 +  #define fp_serdisp_cliparea                  serdisp_cliparea
 +  #define fp_serdisp_defaultdevice             serdisp_defaultdevice
@@ -356,10 +421,6 @@
 +  static int      (*fp_serdisp_getdepth)       (void* dd);
 +  static int      (*fp_serdisp_getpixelaspect) (void* dd);
 +  static void     (*fp_serdisp_quit)           (void* dd);
-+
-+  static void     (*fp_serdisp_setcolour)      (void* dd, int x, int y, long colour);
-+  static void     (*fp_serdisp_setgrey)        (void* dd, int x, int y, unsigned char grey);
-+  static long     (*fp_serdisp_getcolour)      (void* dd, int x, int y);
 +
 +  static void     (*fp_serdisp_setsdcol)       (void* dd, int x, int y, uint32_t colour);
 +  static void     (*fp_serdisp_setsdgrey)      (void* dd, int x, int y, unsigned char grey);
@@ -442,10 +503,7 @@
 +      if (j > MAX_GREYVALUE) 
 +        j = MAX_GREYVALUE;   /* should never occur (but to be sure ...) */
 +
-+      if (use_new_colour_functions)
-+        fp_serdisp_setsdgrey(dd, x+sx, y+sy, j);
-+      else
-+        fp_serdisp_setgrey(dd, x+sx, y+sy, j);
++      fp_serdisp_setsdgrey(dd, x+sx, y+sy, j);
 +
 +      i = i - j;
 +      k = (i >> 4);
@@ -490,15 +548,9 @@
 +
 +      /* if monochrome-display: consider threshold value (default value: 127) */
 +      if (image_colours == 2) {
-+        if (use_new_colour_functions)
-+          fp_serdisp_setsdgrey(dd, x+sx, y+sy, ((i <= serdisp_flag_threshold) ? 0 : MAX_GREYVALUE) );
-+        else
-+          fp_serdisp_setgrey(dd, x+sx, y+sy, ((i <= serdisp_flag_threshold) ? 0 : MAX_GREYVALUE) );
++        fp_serdisp_setsdgrey(dd, x+sx, y+sy, ((i <= serdisp_flag_threshold) ? 0 : MAX_GREYVALUE) );
 +      } else {
-+        if (use_new_colour_functions)
-+          fp_serdisp_setsdgrey(dd, x+sx, y+sy, i);  /* let serdisplib do the greyvalue matching if greyscale display */
-+        else
-+          fp_serdisp_setgrey(dd, x+sx, y+sy, i);  /* let serdisplib do the greyvalue matching if greyscale display */
++        fp_serdisp_setsdgrey(dd, x+sx, y+sy, i);  /* let serdisplib do the greyvalue matching if greyscale display */
 +      }
 +    }
 +  }
@@ -529,11 +581,7 @@
 +
 +  unsigned char* buffer = image[0];
 +
-+#ifdef SERDISP_STATIC
-+  if (serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
-+#else
-+  if (fp_serdisp_cliparea && serdisp_flag_viewmode != 2) {  /* serdisp_cliparea() and viewmode=2 don't go together ... */
-+#endif
++  if (isclipareasave) {
 +    fp_serdisp_cliparea(dd, sx, sy, w, h, diff_x, diff_y, image_width, image_height, 24, buffer);
 +  } else {
 +    shifty = diff_y * image_width;
@@ -545,10 +593,7 @@
 +        g = buffer[shiftx++];
 +        b = buffer[shiftx  ];
 +
-+        if (use_new_colour_functions)
-+          fp_serdisp_setsdcol(dd, x+sx, y+sy, 0xFF000000 | (r << 16) | (g << 8) | b);
-+        else
-+          fp_serdisp_setcolour(dd, x+sx, y+sy, 0xFF000000L | (r << 16) | (g << 8) | b);
++        fp_serdisp_setsdcol(dd, x+sx, y+sy, 0xFF000000 | (r << 16) | (g << 8) | b);
 +      }
 +      shifty += image_width;
 +    }
@@ -603,10 +648,8 @@
 +  }
 +
 +#ifdef SERDISP_STATIC
-+  #ifdef SD_SUPP_ARCHINDEP_SDCOL_FUNCTIONS
-+    use_new_colour_functions = 1;
-+  #else
-+    use_new_colour_functions = 0;
++  #ifndef SD_SUPP_ARCHINDEP_SDCOL_FUNCTIONS
++    #error "vo_serdisp.c: serdisp library too old (no support for new colour functions)"
 +  #endif
 +#else
 +  /* dyn-load library and init. function pointers */
@@ -686,23 +729,14 @@
 +  sd_errormsg = (char*) dlsym(sdhnd, "sd_errormsg");
 +  dlerror_die("sd_errormsg");
 +
-+  fp_serdisp_setcolour = (void (*)(void*, int, int, long int)) dlsym(sdhnd, "serdisp_setcolour");
-+  dlerror(); /* clear error code */
-+
-+  fp_serdisp_setgrey = (void (*)(void*, int, int, unsigned char)) dlsym(sdhnd, "serdisp_setgrey");
-+  dlerror(); /* clear error code */
-+
-+  fp_serdisp_getcolour = (long int (*)(void*, int, int)) dlsym(sdhnd, "serdisp_getcolour");
-+  dlerror(); /* clear error code */
-+
 +  fp_serdisp_setsdcol = (void (*)(void*, int, int, uint32_t)) dlsym(sdhnd, "serdisp_setsdcol");
-+  dlerror(); /* clear error code */
++  dlerror_die("serdisp_setsdcol");
 +
 +  fp_serdisp_setsdgrey = (void (*)(void*, int, int, unsigned char)) dlsym(sdhnd, "serdisp_setsdgrey");
-+  dlerror(); /* clear error code */
++  dlerror_die("serdisp_setsdgrey");
 +
 +  fp_serdisp_getsdcol = (uint32_t (*)(void*, int, int)) dlsym(sdhnd, "serdisp_getsdcol");
-+  dlerror(); /* clear error code */
++  dlerror_die("serdisp_getsdcol");
 +
 +  fp_serdisp_cliparea = (int (*)(void*, int, int, int, int, int, int, int, int, int, unsigned char*)) dlsym(sdhnd, "serdisp_cliparea");
 +  dlerror(); /* clear error code */
@@ -710,15 +744,6 @@
 +  fp_serdisp_defaultdevice = (char* (*)(const char*)) dlsym(sdhnd, "serdisp_defaultdevice");
 +  dlerror(); /* clear error code */
 +
-+  if ( ! ( (fp_serdisp_setcolour && fp_serdisp_setgrey && fp_serdisp_getcolour) || 
-+           (fp_serdisp_setsdcol && fp_serdisp_setsdgrey && fp_serdisp_getsdcol) ) ) {
-+    mp_msg(MSGT_VO,MSGL_ERR,"dlsym(): neither old nor new colour functions could be loaded\n");
-+    return VO_ERROR;
-+  }
-+
-+  if (fp_serdisp_setsdcol && fp_serdisp_setsdgrey && fp_serdisp_getsdcol) {
-+    use_new_colour_functions = 1;
-+  }
 +  /* done loading all required symbols */
 +#endif /* SERDISP_STATIC */
 +
@@ -860,6 +885,16 @@
 +    if (screen_h > fp_serdisp_getheight(dd)) screen_h = fp_serdisp_getheight(dd);
 +  }
 +
++  /* check whether it is save to use serdisp_cliparea() */
++  if (
++#ifndef SERDISP_STATIC
++    (! fp_serdisp_cliparea) ||
++#endif
++    (istruecolour && (screen_w != fp_serdisp_getwidth(dd)) )
++  ) {
++    isclipareasave = 0;
++  }
++
 +  screen_x = (fp_serdisp_getwidth(dd) -screen_w) >> 1;
 +  screen_y = (fp_serdisp_getheight(dd)-screen_h) >> 1;
 +
@@ -867,7 +902,6 @@
 +  src_height = height;
 +  image_width = screen_w;
 +  image_height = screen_h;
-+
 +
 +  if(sws) 
 +    sws_freeContext(sws);
@@ -891,12 +925,10 @@
 +                                width, height, d_width, d_height, flags);
 +    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): + aspect ratio corr.: src_w/_h: %d/%d -> image_w/_h: %d/%d  pixel asp.ratio: %.2f\n", 
 +                               src_width, src_height, image_width, image_height, (fp_serdisp_getpixelaspect(dd) / 100.0));
-+    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): dest geometry: x/y/w/h: %d/%d/%d/%d\n", screen_x, screen_y, screen_w, screen_h);
++    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): dest geometry: x/y/w/h: %d/%d/%d/%d (factor: %f)\n", screen_x, screen_y, screen_w, screen_h, fact);
 +    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): phys. display dimensions: w/h: %d/%d\n", fp_serdisp_getwidth(dd), fp_serdisp_getheight(dd));
-+    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): flags: algo: %d, threshold: %d, gamma[enabled=%d]: %.2f, viewmode: %d\n", 
-+                               serdisp_flag_algo, serdisp_flag_threshold, serdisp_flag_gamma_enable, serdisp_flag_gamma, serdisp_flag_viewmode);
-+    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): colour functions: %s\n", 
-+                               (use_new_colour_functions) ? "new 'uint32_t'-based colours" : "old, 'long'-based colours");
++    mp_msg(MSGT_VO, MSGL_INFO, "vo_serdisp.config(): flags: algo: %d, threshold: %d, gamma[enabled=%d]: %.2f, viewmode: %d, cliparea: %d\n", 
++                               serdisp_flag_algo, serdisp_flag_threshold, serdisp_flag_gamma_enable, serdisp_flag_gamma, serdisp_flag_viewmode, isclipareasave);
 +  }
 +
 +  return 0;
@@ -937,7 +969,7 @@
 +    break;
 +  }
 +
-+  sws_scale(sws,src,stride,0,src_height,image,image_stride); 
++  sws_scale(sws,(const uint8_t* const *)src,stride,0,src_height,image,image_stride); 
 +
 +  /* small hack which cleans potential remainders of a previously drawn OSD */
 +  /* the drawing routines might not use the hole display area for drawing a frame (because of aspect ratio a.s.o.), 
@@ -948,10 +980,7 @@
 +    int i,j;
 +    for (j = osd_posy; j < osd_posy + osd_height; j++) {
 +      for (i = 0 ; i < fp_serdisp_getwidth(dd); i++) {
-+        if (use_new_colour_functions)
-+          fp_serdisp_setsdcol(dd, i, j, bg_colour);
-+        else
-+          fp_serdisp_setcolour(dd, i, j, (long)bg_colour);
++        fp_serdisp_setsdcol(dd, i, j, bg_colour);
 +      }
 +    }
 +    osd_updated = 0;  /* do this only once */
@@ -970,7 +999,7 @@
 +  int dx2 = screen_x + ((x+w) * screen_w / src_width);
 +  int dy2 = screen_y + ((y+h) * screen_h / src_height);
 +
-+  sws_scale(sws,src,stride,y,h,image,image_stride);
++  sws_scale(sws, (const uint8_t* const*) src, stride, y, h, image, image_stride);
 +  drawing_algo(image, dx1, dy1, dx2-dx1, dy2-dy1);
 +
 +  return 0;
@@ -1010,27 +1039,18 @@
 +    /* draw background using foreground colour */
 +    for (j = osd_posy; j < osd_posy + osd_height; j++) {
 +      for (i = 0; i < fp_serdisp_getwidth(dd); i++) {
-+        if (use_new_colour_functions)
-+          fp_serdisp_setsdcol(dd, i,j, fg_colour);
-+        else
-+          fp_serdisp_setcolour(dd, i,j, (long)fg_colour);
++        fp_serdisp_setsdcol(dd, i,j, fg_colour);
 +      }
 +    }
 +    /* draw progress-bar using background colour */
 +    for (j = osd_posy + osd_margin ; j < osd_posy + osd_margin + osd_bar_height ; j++) {
 +      for (i = 0 ; i < bar_width ; i++) {
-+        if (use_new_colour_functions)
-+          fp_serdisp_setsdcol(dd, bordergap + i, j, bg_colour);
-+        else
-+          fp_serdisp_setcolour(dd, bordergap + i, j, (long)bg_colour);
++        fp_serdisp_setsdcol(dd, bordergap + i, j, bg_colour);
 +      }
 +      for (s = 0; s < 5; s++) {
 +        i = bordergap +   (((fp_serdisp_getwidth(dd) - bordergap*2) / 4) * s);
 +        if (!(s % 2) || (j % 2)) {
-+          if (use_new_colour_functions)
-+            fp_serdisp_setsdcol(dd, i ,j, fp_serdisp_getsdcol(dd, i, j) ^ 0xFFFFFF);
-+          else
-+            fp_serdisp_setcolour(dd, i ,j, fp_serdisp_getcolour(dd, i, j) ^ 0xFFFFFFL);
++          fp_serdisp_setsdcol(dd, i ,j, fp_serdisp_getsdcol(dd, i, j) ^ 0xFFFFFF);
 +        }
 +      }
 +    }
