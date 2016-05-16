@@ -18,6 +18,7 @@
  * Version 0.9.6: 2016-05-15: added checks whether serdisp_cliparea() may be used reliably
  *                            removed support for very old serdisp version not supporting new colour functions to clean up code
  *                            get rid of compiler warning when calling sws_scale()
+ *                2016-05-16: fix osd bug
  *
  */
 
@@ -778,22 +779,22 @@ draw_frame(uint8_t *src[]) {
 
   sws_scale(sws,(const uint8_t* const *)src,stride,0,src_height,image,image_stride); 
 
+  drawing_algo(image, screen_x, screen_y, screen_w, screen_h);
+
   /* small hack which cleans potential remainders of a previously drawn OSD */
   /* the drawing routines might not use the hole display area for drawing a frame (because of aspect ratio a.s.o.), 
      but the OSD always uses the bottom of the display. 
      parts of the OSD might not be reached by the drawing routines() and because of this ugly remainders would occur.
      this hack simply fills the space not reached by the drawing routines using the background colour */
   if (osd_updated) {  /* only apply the hack after an OSD draw event */
-    int i,j;
-    for (j = osd_posy; j < osd_posy + osd_height; j++) {
+    int i,j, start_j = (screen_y >= 0 && (screen_y + screen_h) > osd_posy) ? (screen_y + screen_h) : osd_posy;
+    for (j = start_j; j < osd_posy + osd_height; j++) {
       for (i = 0 ; i < fp_serdisp_getwidth(dd); i++) {
         fp_serdisp_setsdcol(dd, i, j, bg_colour);
       }
     }
     osd_updated = 0;  /* do this only once */
   }
-
-  drawing_algo(image, screen_x, screen_y, screen_w, screen_h);
 
   return 0;
 }
