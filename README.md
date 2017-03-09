@@ -25,38 +25,38 @@ Usage
 `mplayer -vo 'serdisp:name=<driver>{":"option}' file`
 
 #### Options
-* **name** (required)
-  driver-name in serdisplib
+* **name** (required)  
+  driver-name in serdisplib  
   *example*: `name=sdl`, `name=rs232`
-* **device** (optional, if not given, default device for *`<name>`* is used (supported since *serdisplib >= 2.01*))
-  device string
-  *example*: `device=out?`, `device=USB?FTDI/DLP2232M`, `device=RS232?/dev/usb/ttyUSB0`
+* **device** (optional, if not given, default device for *`<name>`* is used (supported since *serdisplib >= 2.01*))  
+  device string  
+  *example*: `device=out?`, `device=USB?FTDI/DLP2232M`, `device=RS232?/dev/usb/ttyUSB0`  
   **NOTE**: all `':'` need to be replaced by `'?'` because mplayer uses `':'` as a separator
-* **options** (optional)
-  options string
+* **options** (optional)  
+  options string  
   *example*: `options=brightness=30;rot=90`
-* **backlight** (default: `1`)
-  `0`: switch backlight off
-  `1`: switch backlight on
+* **backlight** (default: `1`)  
+  `0`: switch backlight off  
+  `1`: switch backlight on  
   *example*: `backlight=0`
-* **viewmode** (default: `0`)
-  `0` : normal (fit video into screen)
-  `1` : fit only width into screen (height might be clipped)
-  `2` : fit only height into screen (width might be clipped)
-* **debug** (default: `0`)
-  `0`: no debug information
+* **viewmode** (default: `0`)  
+  `0` : normal (fit video into screen)  
+  `1` : fit only width into screen (height might be clipped)  
+  `2` : fit only height into screen (width might be clipped)  
+* **debug** (default: `0`)  
+  `0`: no debug information  
   `1`: print debug information
 
 Options only applicable when using monochrome or greyscale displays:
-* **dither** (default: `1`)
-  `0` : threshold
+* **dither** (default: `1`)  
+  `0` : threshold  
   `1` : floyd steinberg
-* **threshold** (only valid for monochrome displays, default: `127`)
+* **threshold** (only valid for monochrome displays, default: `127`)  
   threshold value for threshold dithering, value in `[0, 255]`
-* **bandpass** (`default: 30`)
+* **bandpass** (`default: 30`)  
   bandpass value for floyd steinberg dithering, value in `[0, 255]`
-* **gamma** (default: `1.0`)
-  gamma correction
+* **gamma** (default: `1.0`)  
+  gamma correction  
   *example*: `gamma=1.5`
 
 ### Examples
