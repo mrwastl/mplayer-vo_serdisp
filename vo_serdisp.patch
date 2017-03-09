@@ -9,7 +9,7 @@
  SRCS_MPLAYER-$(SNDIO)         += libao2/ao_sndio.c
  SRCS_MPLAYER-$(SUNAUDIO)      += libao2/ao_sun.c
 --- mplayer_orig/configure	2016-05-16 10:29:30.374371632 +0200
-+++ configure	2016-05-15 23:40:00.390989917 +0200
++++ configure	2017-03-09 19:42:12.506626810 +0100
 @@ -506,6 +506,7 @@
    --enable-bl              enable Blinkenlights video output [disable]
    --enable-tdfxvid         enable tdfx_vid video output [disable]
@@ -35,7 +35,44 @@
    --disable-tga)        _tga=no         ;;
    --enable-tga)         _tga=yes        ;;
    --enable-directfb)    _directfb=yes   ;;
-@@ -4569,6 +4573,42 @@
+@@ -1600,8 +1604,8 @@
+ libavprotocols=$(echo $libavprotocols_all)
+ libavfilters=$(echo $libavfilters_all)
+ 
+-libavdecoders=$(filter_out_component decoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_MMAL MPEG4_MMAL MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV H264_MMAL H264_MEDIACODEC [A-Z0-9_]*_AT')
+-libavencoders=$(filter_out_component encoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV NVENC[A-Z0-9_]* H264_NVENC[A-Z0-9_]* HEVC_NVENC[A-Z0-9_]* HAP H264_VIDEOTOOLBOX H264_VAAPI HEVC_VAAPI MJPEG_VAAPI H264_OMX MPEG4_OMX [A-Z0-9_]*_AT')
++libavdecoders=$(filter_out_component decoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_MMAL MPEG4_MMAL MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV H264_MMAL H264_MEDIACODEC HEVC_MEDIACODEC H264_CUVID HEVC_CUVID VC1_CUVID VP8_CUVID VP9_CUVID H263_CUVID MJPEG_CUVID MPEG1_CUVID MPEG2_CUVID MPEG4_CUVID VP8_MEDIACODEC VP9_MEDIACODEC MPEG4_MEDIACODEC [A-Z0-9_]*_AT')
++libavencoders=$(filter_out_component encoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV NVENC[A-Z0-9_]* H264_NVENC[A-Z0-9_]* HEVC_NVENC[A-Z0-9_]* HAP H264_VIDEOTOOLBOX H264_VAAPI HEVC_VAAPI MJPEG_VAAPI MPEG2_VAAPI VP8_VAAPI H264_OMX MPEG4_OMX [A-Z0-9_]*_AT')
+ libavdemuxers=$(filter_out_component demuxer 'AVISYNTH LIB[A-Z0-9_]* REDIR')
+ libavmuxers=$(filter_out_component muxer 'CHROMAPRINT LIB[A-Z0-9_]* RTP RTSP SAP')
+ libavprotocols=$(filter_out_component protocol 'BLURAY FFRTMPCRYPT HTTPS LIB[A-Z0-9_]* TLS TLS_GNUTLS TLS_OPENSSL TLS_SECURETRANSPORT TLS_SCHANNEL')
+@@ -2044,6 +2048,7 @@
+ def_local_aligned_8='#define HAVE_LOCAL_ALIGNED_8 0'
+ def_local_aligned_16='#define HAVE_LOCAL_ALIGNED_16 0'
+ def_local_aligned_32='#define HAVE_LOCAL_ALIGNED_32 0'
++def_vsx='#define HAVE_VSX 0'
+ arch_all='X86 IA64 SPARC ARM AVR32 SH4 PPC ALPHA MIPS PA_RISC S390 S390X VAX BFIN XTENSA TOMI GENERIC AARCH64'
+ subarch_all='X86_32 X86_64 PPC64'
+ case "$host_arch" in
+@@ -3489,7 +3494,7 @@
+ if test "$_gmtime_r" = yes ; then
+   def_gmtime_r='#define HAVE_GMTIME_R 1'
+ else
+-  def_gmtime_r='#undef HAVE_GMTIME_R'
++  def_gmtime_r='#define HAVE_GMTIME_R 0'
+ fi
+ echores "$_gmtime_r"
+ 
+@@ -3499,7 +3504,7 @@
+ if test "$_localtime_r" = yes ; then
+   def_localtime_r='#define HAVE_LOCALTIME_R 1'
+ else
+-  def_localtime_r='#undef HAVE_LOCALTIME_R'
++  def_localtime_r='#define HAVE_LOCALTIME_R 0'
+ fi
+ echores "$_localtime_r"
+ 
+@@ -4569,6 +4574,42 @@
  fi
  echores "$_xvr100"
  
@@ -78,7 +115,27 @@
  echocheck "tga"
  if test "$_tga" = yes ; then
    def_tga='#define CONFIG_TGA 1'
-@@ -8557,6 +8597,7 @@
+@@ -7943,7 +7984,7 @@
+     fi
+     echores "$_xshape"
+ 
+-    # Check for GTK2
++    # Check for GTK+ 2
+     echocheck "GTK+ version"
+ 
+     if $_pkg_config --exists gtk+-2.0 ; then
+@@ -7958,7 +7999,9 @@
+         die "$_gtk"
+       fi
+ 
+-      # Check for GLIB2
++      # Check for specific minimum version of GLib
++      # (version 2.4.0, required by GTK+ 2.4.0, would have been
++      # checked automatically, but doesn't meet our requirements)
+       echocheck "GLib version"
+       if $_pkg_config --exists glib-2.0 ; then
+         _glib=$($_pkg_config --modversion "glib-2.0 >= 2.6.0" 2>&1)
+@@ -8557,6 +8600,7 @@
  S3FB = $_s3fb
  SDL = $_sdl
  SDL_IMAGE = $sdl_image
@@ -86,7 +143,28 @@
  SPEEX = $_speex
  STREAM_CACHE = $_stream_cache
  SGIAUDIO = $_sgiaudio
-@@ -9140,6 +9181,7 @@
+@@ -8691,6 +8735,7 @@
+ CONFIG_H263DSP = yes
+ CONFIG_H264CHROMA = yes
+ CONFIG_H264DSP = yes
++CONFIG_H264PARSE = yes
+ CONFIG_H264PRED= yes
+ CONFIG_H264QPEL= yes
+ CONFIG_HPELDSP = yes
+@@ -8704,10 +8749,11 @@
+ CONFIG_IDCTDSP = yes
+ CONFIG_TPELDSP = yes
+ CONFIG_HUFFMAN = yes
+-CONFIG_IMDCT15 = yes
++CONFIG_MDCT15  = yes
+ CONFIG_INTRAX8 = yes
+ CONFIG_LLAUDDSP= yes
+ CONFIG_LLVIDDSP= yes
++CONFIG_LLVIDENCDSP = yes
+ CONFIG_LPC     = yes
+ CONFIG_LSP     = yes
+ CONFIG_LZF = yes
+@@ -9140,6 +9186,7 @@
  $def_s3fb
  $def_sdl
  $def_sdl_sdl_h
@@ -116,7 +194,7 @@
  };
  
 --- mplayer_orig/libvo/vo_serdisp.c	1970-01-01 01:00:00.000000000 +0100
-+++ libvo/vo_serdisp.c	2016-05-16 21:57:50.401820407 +0200
++++ libvo/vo_serdisp.c	2017-03-09 22:58:52.194241539 +0100
 @@ -0,0 +1,884 @@
 +/*
 + * MPlayer
@@ -257,7 +335,7 @@
 +    "\nOptions:\n"
 +    "    name (required)\n"
 +    "      driver-name in serdisplib (e.g.: 'rs232')\n"
-+    "    device (optional, if not given, default device for <name> is used (serdisplib >= 2.00))\n"
++    "    device (optional, if not given, default device for <name> is used (serdisplib >= 2.01))\n"
 +    "      device string (e.g.: 'RS232?/dev/usb/ttyUSB0')\n"
 +    "      NOTE: all ':' need to be replaced by '?' because mplayer uses ':' as a separator\n"
 +    "    options (optional)\n"
@@ -273,14 +351,14 @@
 +    "      0: no debug information\n"
 +    "      1: print debug information\n"
 +    "\n\n"
-+    "  Options only applicable to monochrome or greyscale displays:\n"
++    "  Options only applicable when using monochrome or greyscale displays:\n"
 +    "    dither (default: 1) \n"
 +    "      0 : threshold\n"
 +    "      1 : floyd steinberg\n"
 +    "    threshold (only valid for monochrome displays, default: 127)\n"
-+    "      threshold value for threshold dithering, some value out of [0, 255]\n"
++    "      threshold value for threshold dithering, value in [0, 255]\n"
 +    "    bandpass (default: 30)\n"
-+    "      bandpass value for floyd steinberg dithering, some value out of [0, 255]\n"
++    "      bandpass value for floyd steinberg dithering, value in [0, 255]\n"
 +    "    gamma (default: 1.0)\n"
 +    "      gamma correction\n"
 +    "\n"
