@@ -1,6 +1,6 @@
---- mplayer_orig/Makefile	2016-05-09 17:31:31.288890183 +0200
-+++ Makefile	2016-05-09 20:13:45.029501903 +0200
-@@ -544,6 +544,7 @@
+--- mplayer_orig/Makefile	2018-04-03 19:35:37.957347876 +0200
++++ Makefile	2018-04-03 19:28:20.415529471 +0200
+@@ -543,6 +543,7 @@
  SRCS_MPLAYER-$(SDL)           += libao2/ao_sdl.c                        \
                                   libvo/vo_sdl.c                         \
                                   libvo/sdl_common.c
@@ -8,9 +8,9 @@
  SRCS_MPLAYER-$(SGIAUDIO)      += libao2/ao_sgi.c
  SRCS_MPLAYER-$(SNDIO)         += libao2/ao_sndio.c
  SRCS_MPLAYER-$(SUNAUDIO)      += libao2/ao_sun.c
---- mplayer_orig/configure	2016-05-16 10:29:30.374371632 +0200
-+++ configure	2017-03-09 19:42:12.506626810 +0100
-@@ -506,6 +506,7 @@
+--- mplayer_orig/configure	2018-04-03 19:35:36.799351006 +0200
++++ configure	2018-04-03 19:28:20.296529786 +0200
+@@ -503,6 +503,7 @@
    --enable-bl              enable Blinkenlights video output [disable]
    --enable-tdfxvid         enable tdfx_vid video output [disable]
    --enable-xvr100          enable SUN XVR-100 video output [autodetect]
@@ -18,7 +18,7 @@
    --disable-tga            disable Targa video output [enable]
    --disable-pnm            disable PNM video output [enable]
    --disable-md5sum         disable md5sum video output [enable]
-@@ -816,6 +817,7 @@
+@@ -811,6 +812,7 @@
  _tdfxfb=no
  _tdfxvid=no
  _xvr100=auto
@@ -26,7 +26,7 @@
  _tga=yes
  _directfb=auto
  _zr=auto
-@@ -1303,6 +1305,8 @@
+@@ -1294,6 +1296,8 @@
    --enable-tdfxvid)     _tdfxvid=yes    ;;
    --disable-xvr100)     _xvr100=no      ;;
    --enable-xvr100)      _xvr100=yes     ;;
@@ -35,44 +35,7 @@
    --disable-tga)        _tga=no         ;;
    --enable-tga)         _tga=yes        ;;
    --enable-directfb)    _directfb=yes   ;;
-@@ -1600,8 +1604,8 @@
- libavprotocols=$(echo $libavprotocols_all)
- libavfilters=$(echo $libavfilters_all)
- 
--libavdecoders=$(filter_out_component decoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_MMAL MPEG4_MMAL MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV H264_MMAL H264_MEDIACODEC [A-Z0-9_]*_AT')
--libavencoders=$(filter_out_component encoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV NVENC[A-Z0-9_]* H264_NVENC[A-Z0-9_]* HEVC_NVENC[A-Z0-9_]* HAP H264_VIDEOTOOLBOX H264_VAAPI HEVC_VAAPI MJPEG_VAAPI H264_OMX MPEG4_OMX [A-Z0-9_]*_AT')
-+libavdecoders=$(filter_out_component decoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_MMAL MPEG4_MMAL MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV H264_MMAL H264_MEDIACODEC HEVC_MEDIACODEC H264_CUVID HEVC_CUVID VC1_CUVID VP8_CUVID VP9_CUVID H263_CUVID MJPEG_CUVID MPEG1_CUVID MPEG2_CUVID MPEG4_CUVID VP8_MEDIACODEC VP9_MEDIACODEC MPEG4_MEDIACODEC [A-Z0-9_]*_AT')
-+libavencoders=$(filter_out_component encoder 'LIB[A-Z0-9_]* H264_QSV MJPEG_QSV MPEG2_QSV HEVC_QSV VC1_MMAL VC1_QSV NVENC[A-Z0-9_]* H264_NVENC[A-Z0-9_]* HEVC_NVENC[A-Z0-9_]* HAP H264_VIDEOTOOLBOX H264_VAAPI HEVC_VAAPI MJPEG_VAAPI MPEG2_VAAPI VP8_VAAPI H264_OMX MPEG4_OMX [A-Z0-9_]*_AT')
- libavdemuxers=$(filter_out_component demuxer 'AVISYNTH LIB[A-Z0-9_]* REDIR')
- libavmuxers=$(filter_out_component muxer 'CHROMAPRINT LIB[A-Z0-9_]* RTP RTSP SAP')
- libavprotocols=$(filter_out_component protocol 'BLURAY FFRTMPCRYPT HTTPS LIB[A-Z0-9_]* TLS TLS_GNUTLS TLS_OPENSSL TLS_SECURETRANSPORT TLS_SCHANNEL')
-@@ -2044,6 +2048,7 @@
- def_local_aligned_8='#define HAVE_LOCAL_ALIGNED_8 0'
- def_local_aligned_16='#define HAVE_LOCAL_ALIGNED_16 0'
- def_local_aligned_32='#define HAVE_LOCAL_ALIGNED_32 0'
-+def_vsx='#define HAVE_VSX 0'
- arch_all='X86 IA64 SPARC ARM AVR32 SH4 PPC ALPHA MIPS PA_RISC S390 S390X VAX BFIN XTENSA TOMI GENERIC AARCH64'
- subarch_all='X86_32 X86_64 PPC64'
- case "$host_arch" in
-@@ -3489,7 +3494,7 @@
- if test "$_gmtime_r" = yes ; then
-   def_gmtime_r='#define HAVE_GMTIME_R 1'
- else
--  def_gmtime_r='#undef HAVE_GMTIME_R'
-+  def_gmtime_r='#define HAVE_GMTIME_R 0'
- fi
- echores "$_gmtime_r"
- 
-@@ -3499,7 +3504,7 @@
- if test "$_localtime_r" = yes ; then
-   def_localtime_r='#define HAVE_LOCALTIME_R 1'
- else
--  def_localtime_r='#undef HAVE_LOCALTIME_R'
-+  def_localtime_r='#define HAVE_LOCALTIME_R 0'
- fi
- echores "$_localtime_r"
- 
-@@ -4569,6 +4574,42 @@
+@@ -4596,6 +4600,42 @@
  fi
  echores "$_xvr100"
  
@@ -115,27 +78,7 @@
  echocheck "tga"
  if test "$_tga" = yes ; then
    def_tga='#define CONFIG_TGA 1'
-@@ -7943,7 +7984,7 @@
-     fi
-     echores "$_xshape"
- 
--    # Check for GTK2
-+    # Check for GTK+ 2
-     echocheck "GTK+ version"
- 
-     if $_pkg_config --exists gtk+-2.0 ; then
-@@ -7958,7 +7999,9 @@
-         die "$_gtk"
-       fi
- 
--      # Check for GLIB2
-+      # Check for specific minimum version of GLib
-+      # (version 2.4.0, required by GTK+ 2.4.0, would have been
-+      # checked automatically, but doesn't meet our requirements)
-       echocheck "GLib version"
-       if $_pkg_config --exists glib-2.0 ; then
-         _glib=$($_pkg_config --modversion "glib-2.0 >= 2.6.0" 2>&1)
-@@ -8557,6 +8600,7 @@
+@@ -8528,6 +8568,7 @@
  S3FB = $_s3fb
  SDL = $_sdl
  SDL_IMAGE = $sdl_image
@@ -143,28 +86,7 @@
  SPEEX = $_speex
  STREAM_CACHE = $_stream_cache
  SGIAUDIO = $_sgiaudio
-@@ -8691,6 +8735,7 @@
- CONFIG_H263DSP = yes
- CONFIG_H264CHROMA = yes
- CONFIG_H264DSP = yes
-+CONFIG_H264PARSE = yes
- CONFIG_H264PRED= yes
- CONFIG_H264QPEL= yes
- CONFIG_HPELDSP = yes
-@@ -8704,10 +8749,11 @@
- CONFIG_IDCTDSP = yes
- CONFIG_TPELDSP = yes
- CONFIG_HUFFMAN = yes
--CONFIG_IMDCT15 = yes
-+CONFIG_MDCT15  = yes
- CONFIG_INTRAX8 = yes
- CONFIG_LLAUDDSP= yes
- CONFIG_LLVIDDSP= yes
-+CONFIG_LLVIDENCDSP = yes
- CONFIG_LPC     = yes
- CONFIG_LSP     = yes
- CONFIG_LZF = yes
-@@ -9140,6 +9186,7 @@
+@@ -9121,6 +9162,7 @@
  $def_s3fb
  $def_sdl
  $def_sdl_sdl_h

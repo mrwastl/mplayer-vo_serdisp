@@ -3,7 +3,7 @@ mplayer-vo_serdisp
 
 Patch for mplayer to add support for serdisplib
 
-This patch file was tested with mplayer svn version 37926.
+This patch file was tested with mplayer svn version 38034.
 
 
 Instructions
